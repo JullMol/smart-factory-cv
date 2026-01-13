@@ -1,0 +1,17 @@
+logLevel: info
+logDestinations: [stdout]
+
+paths:
+  live/cam1:
+    source: publisher
+    sourceOnDemand: no
+  live/cam2:
+    source: publisher
+    sourceOnDemand: no
+  live/cam3:
+    source: publisher
+    sourceOnDemand: no
+  live/cam4:
+    source: publisher
+    sourceOnDemand: no
+  all_others:

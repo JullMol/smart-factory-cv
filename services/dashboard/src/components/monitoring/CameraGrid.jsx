@@ -2,65 +2,48 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import useStore from '../../store/store';
 
 const AI_API_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
-const VIDEO_API_URL = import.meta.env.VITE_VIDEO_API_URL || 'http://localhost:3002';
+const RTSP_SERVER = import.meta.env.VITE_RTSP_SERVER || 'localhost:8554';
+const USE_RTSP = import.meta.env.VITE_USE_RTSP === 'true';
 
-const DEFAULT_VIDEOS = [
-  { id: 'cam-1', name: 'Main Entrance', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' },
-  { id: 'cam-2', name: 'Assembly Line A', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
-  { id: 'cam-3', name: 'Loading Dock', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
-  { id: 'cam-4', name: 'Machine Shop', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4' }
+const RTSP_CAMERAS = [
+  { id: 'cam-1', name: 'Main Entrance', rtspPath: 'live/cam1' },
+  { id: 'cam-2', name: 'Assembly Line A', rtspPath: 'live/cam2' },
+  { id: 'cam-3', name: 'Loading Dock', rtspPath: 'live/cam3' },
+  { id: 'cam-4', name: 'Machine Shop', rtspPath: 'live/cam4' }
+];
+
+const FALLBACK_VIDEOS = [
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4'
 ];
 
 export default function CameraGrid() {
   const { cameras, detections } = useStore();
-  const [videoList, setVideoList] = useState(DEFAULT_VIDEOS);
-  const [loading, setLoading] = useState(true);
   
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const res = await fetch(`${VIDEO_API_URL}/api/videos`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.videos && data.videos.length > 0) {
-            setVideoList(data.videos);
-          }
-        }
-      } catch (e) {
-        console.log('Using default videos (API not available)');
-      }
-      setLoading(false);
-    };
-    
-    fetchVideos();
-    
-    const eventSource = new EventSource(`${VIDEO_API_URL}/api/videos/watch`);
-    eventSource.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (data.videos && data.videos.length > 0) {
-          setVideoList(data.videos);
-        }
-      } catch (err) {}
-    };
-    
-    eventSource.onerror = () => {
-      eventSource.close();
-    };
-    
-    return () => eventSource.close();
-  }, []);
-  
-  const displayCameras = cameras.length > 0 ? cameras : videoList;
+  const displayCameras = cameras.length > 0 ? cameras : RTSP_CAMERAS.map((cam, i) => ({
+    ...cam,
+    url: USE_RTSP 
+      ? `http://${RTSP_SERVER}/${cam.rtspPath}` 
+      : FALLBACK_VIDEOS[i]
+  }));
   
   return (
     <div className="card" style={{ flex: 1 }}>
       <div className="card-header">
         <span className="card-title">Live Camera Feeds</span>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {loading && (
-            <span style={{ fontSize: '0.7rem', color: 'var(--accent-yellow)' }}>
-              Loading...
+          {USE_RTSP && (
+            <span style={{ 
+              fontSize: '0.65rem', 
+              color: '#3fb950',
+              padding: '0.2rem 0.4rem',
+              background: 'rgba(63, 185, 80, 0.15)',
+              borderRadius: '4px',
+              border: '1px solid rgba(63, 185, 80, 0.3)'
+            }}>
+              RTSP Mode
             </span>
           )}
           <span style={{ 
@@ -76,12 +59,13 @@ export default function CameraGrid() {
       </div>
       <div className="card-body">
         <div className="camera-grid">
-          {displayCameras.map((camera) => (
+          {displayCameras.map((camera, index) => (
             <CameraFeed 
               key={camera.id} 
               camera={camera} 
               detectionData={detections[camera.id]}
-              videoUrl={camera.url}
+              videoUrl={camera.url || FALLBACK_VIDEOS[index]}
+              rtspPath={camera.rtspPath}
             />
           ))}
         </div>
@@ -90,7 +74,7 @@ export default function CameraGrid() {
   );
 }
 
-function CameraFeed({ camera, videoUrl }) {
+function CameraFeed({ camera, videoUrl, rtspPath }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -101,6 +85,7 @@ function CameraFeed({ camera, videoUrl }) {
     compliance_rate: 100
   });
   const [processingTime, setProcessingTime] = useState(0);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
   const { confidenceThreshold, updateMetrics, addAlert } = useStore();
   
   const detectFrame = useCallback(async () => {
@@ -168,15 +153,19 @@ function CameraFeed({ camera, videoUrl }) {
       try {
         await video.play();
         setIsPlaying(true);
+        setConnectionStatus('connected');
       } catch (e) {
         console.log('Video autoplay blocked:', e);
+        setConnectionStatus('error');
       }
     };
     
     video.addEventListener('loadeddata', playVideo);
+    video.addEventListener('error', () => setConnectionStatus('error'));
     
     return () => {
       video.removeEventListener('loadeddata', playVideo);
+      video.removeEventListener('error', () => {});
     };
   }, [videoUrl]);
   
@@ -271,7 +260,19 @@ function CameraFeed({ camera, videoUrl }) {
         <div className="camera-header">
           <span className="camera-name">{camera.name}</span>
           <div className="camera-status">
-            <span className="live-badge">LIVE</span>
+            {USE_RTSP && rtspPath && (
+              <span style={{ 
+                fontSize: '0.6rem', 
+                color: '#8b949e',
+                marginRight: '0.5rem' 
+              }}>
+                {rtspPath}
+              </span>
+            )}
+            <span className={`live-badge ${connectionStatus === 'error' ? 'error' : ''}`}>
+              {connectionStatus === 'connected' ? 'LIVE' : 
+               connectionStatus === 'error' ? 'OFFLINE' : 'CONNECTING'}
+            </span>
           </div>
         </div>
         

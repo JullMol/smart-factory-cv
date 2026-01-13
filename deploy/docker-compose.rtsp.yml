@@ -1,0 +1,21 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: rtsp-server
+    ports:
+      - "8554:8554"
+      - "1935:1935"
+      - "8888:8888"
+      - "8889:8889"
+    environment:
+      - MTX_PROTOCOLS=tcp,udp
+      - MTX_WEBRTCADDITIONALHOSTS=localhost
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+    restart: unless-stopped
+    networks:
+      - factory-net
+
+networks:
+  factory-net:
+    driver: bridge
