@@ -80,3 +80,4 @@ validation_visual/
 .pytest_cache/
 .coverage
 htmlcov/
+.gitignore
