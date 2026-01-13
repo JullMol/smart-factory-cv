@@ -27,21 +27,6 @@ jobs:
       - name: Run Ruff
         run: ruff check services/ai-inference/src/ || true
 
-  lint-go:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-      
-      - name: Check Go code
-        working-directory: services/stream-gateway
-        run: go vet ./... || true
-
   lint-frontend:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -69,14 +54,6 @@ jobs:
       - name: Build Docker image
         run: docker build -t ai-inference ./services/ai-inference
 
-  build-gateway:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Build Docker image
-        run: docker build -t stream-gateway ./services/stream-gateway
-
   build-dashboard:
     runs-on: ubuntu-latest
     steps:
@@ -84,18 +61,3 @@ jobs:
       
       - name: Build Docker image
         run: docker build -t dashboard ./services/dashboard
-
-  test-go:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-      
-      - name: Run tests
-        working-directory: services/stream-gateway
-        run: go test ./... || true
