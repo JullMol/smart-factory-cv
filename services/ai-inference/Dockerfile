@@ -4,11 +4,8 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -22,7 +19,6 @@ COPY config/ ./config/
 RUN mkdir -p models
 
 ENV MODEL_PATH=/app/models/best.pt
-ENV MODEL_FALLBACK_PATH=/app/models/best.pt
 ENV GRPC_HOST=0.0.0.0
 ENV GRPC_PORT=50051
 ENV REST_HOST=0.0.0.0
