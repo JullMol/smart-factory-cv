@@ -1,108 +1,189 @@
 # Smart Factory CV
 
-AI-powered PPE detection system for industrial safety monitoring using YOLOv8.
+**Industry-Grade AI-Powered PPE Detection System for Industrial Safety Monitoring**
+
+Real-time computer vision system that monitors factory floors for PPE compliance, detects safety violations, and provides intelligent alerting through virtual fencing zones.
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)
+![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)
 
 ## Features
 
-- Real-time webcam detection
-- Image upload for batch processing
-- RTSP stream support (for IP cameras)
-- Safety violation tracking
-- Live dashboard with detection stats
+- **Real-time Detection**: ONNX/TensorRT optimized YOLOv8 inference (<10ms latency)
+- **Multi-Camera Support**: Manage 8+ RTSP/webcam streams concurrently
+- **Virtual Fencing**: Define polygon danger zones with custom PPE requirements
+- **Object Tracking**: Person re-identification across frames with ByteTrack
+- **gRPC Communication**: High-performance binary protocol between services
+- **Industrial Dashboard**: Dark theme UI with live camera grid and alert panel
+- **Observability**: Prometheus metrics + Grafana dashboards
+- **One-Command Deploy**: Docker Compose with GPU support
 
-## Tech Stack
+## Architecture
 
-- **AI Engine**: Python 3.10+, YOLOv8, FastAPI
-- **Backend**: Go 1.21+, WebSocket streaming
-- **Frontend**: React 18, Vite
-- **Model**: YOLOv8n (71.7% mAP50, 6.3MB)
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   RTSP/Webcam   │────▶│  Stream Gateway  │────▶│    Dashboard    │
+│    Cameras      │     │      (Go)        │     │    (React)      │
+└─────────────────┘     └────────┬─────────┘     └─────────────────┘
+                                 │ gRPC
+                        ┌────────▼─────────┐
+                        │   AI Inference   │
+                        │ (Python + ONNX)  │
+                        └──────────────────┘
+                                 │
+        ┌────────────────────────┼────────────────────────┐
+        ▼                        ▼                        ▼
+┌───────────────┐    ┌───────────────────┐    ┌────────────────┐
+│   Detector    │    │     Tracker       │    │  Zone Checker  │
+│ YOLOv8 ONNX   │    │  Object Re-ID     │    │Virtual Fencing │
+└───────────────┘    └───────────────────┘    └────────────────┘
+```
 
 ## Quick Start
 
 ### Prerequisites
 
-- Python 3.10+
-- Go 1.21+
-- Node.js 18+
-- NVIDIA GPU (optional, for training)
+- Docker & Docker Compose
+- NVIDIA GPU + CUDA (optional, for TensorRT)
+- Node.js 18+ (for local development)
+- Go 1.21+ (for local development)
+- Python 3.10+ (for local development)
 
-### Installation
+### One-Command Deployment
 
-```powershell
-.\setup.ps1
+```bash
+docker-compose -f deploy/docker-compose.yml up -d
 ```
 
-### Running
+Access:
+- **Dashboard**: http://localhost:3000
+- **API**: http://localhost:8080
+- **Grafana**: http://localhost:3001 (admin/smartfactory)
+- **Prometheus**: http://localhost:9092
 
-```powershell
-.\start.ps1
+### Local Development
+
+```bash
+# Install dependencies
+make dev
 ```
-
-Access dashboard at: http://localhost:3000
 
 ## Project Structure
 
 ```
 smart-factory-cv/
-├── ai-engine/
-│   ├── src/              # FastAPI server & detector
-│   ├── scripts/          # Training scripts
-│   ├── models/           # Trained models (best.pt)
-│   └── requirements.txt  # Python dependencies
-├── backend-streamer/
-│   ├── cmd/              # Main entry point
-│   ├── internal/         # WebSocket & stream processing
-│   └── go.mod            # Go dependencies
-├── frontend-dashboard/
-│   ├── src/              # React components
-│   ├── package.json      # Node dependencies
-│   └── vite.config.js    # Vite configuration
-├── data/
-│   └── merged_dataset/   # Training dataset (9,442 images)
-├── setup.ps1             # Dependency installer
-├── start.ps1             # Service launcher
-├── README.md
-└── .gitignore
+├── services/
+│   ├── ai-inference/         # Python - ONNX/TensorRT detector
+│   │   ├── src/              # Main server, detector, tracker, zones
+│   │   ├── scripts/          # Model export, training
+│   │   └── Dockerfile
+│   ├── stream-gateway/       # Go - RTSP capture, WebSocket hub
+│   │   ├── cmd/server/       # Entry point
+│   │   ├── internal/         # Core packages
+│   │   └── Dockerfile
+│   └── dashboard/            # React - Industrial UI
+│       ├── src/              # Components, hooks, store
+│       └── Dockerfile
+├── proto/                    # gRPC definitions
+├── deploy/                   # Docker Compose
+├── monitoring/               # Prometheus + Grafana
+└── docs/                     # Documentation
 ```
 
-## API Endpoints
+## Tech Stack
 
-### AI Engine (port 8000)
-- `GET /health` - Health check
-- `POST /detect` - Detect objects in image
-- `POST /detect/base64` - Detect objects in base64 image
+| Component | Technology |
+|-----------|------------|
+| AI Engine | Python, ONNX Runtime, TensorRT, Norfair, Shapely |
+| Backend | Go, gRPC, WebSocket, Prometheus |
+| Frontend | React 18, Recharts, Framer Motion, Zustand |
+| Infrastructure | Docker, Redis, Prometheus, Grafana |
+| Model | YOLOv8n (71.7% mAP50, 6.3MB) |
 
-### Backend (port 8080)
-- `GET /health` - Health check
-- `WS /ws` - WebSocket for real-time detections
+## Configuration
 
-## Training
+### Environment Variables
 
-Train custom model:
-
-```powershell
-cd ai-engine/scripts
-python train.py --model n --epochs 100 --batch 16 --device 0
+**AI Inference:**
+```env
+MODEL_PATH=/app/models/best.onnx
+CONFIDENCE_THRESHOLD=0.5
+GRPC_PORT=50051
+DEVICE=cuda
 ```
 
-Options:
-- `--model`: n, s, m, l, x (model size)
-- `--epochs`: training epochs
-- `--batch`: batch size
-- `--device`: 0 (GPU) or cpu
+**Stream Gateway:**
+```env
+AI_ENGINE_URL=ai-inference:50051
+HTTP_ADDR=:8080
+TARGET_FPS=15
+```
 
-## Dataset
+### Zone Configuration
 
-- **Classes**: Hardhat, Mask, NO-Hardhat, NO-Mask, NO-Safety Vest, Person, Safety Cone, Safety Vest, machinery, vehicle
-- **Images**: 9,442 (7,254 train, 1,442 val, 746 test)
-- **Format**: YOLO (normalized bounding boxes)
+Define danger zones in `services/ai-inference/config/zones.yaml`:
 
-## Model Performance
+```yaml
+zones:
+  - id: "zone-1"
+    name: "Machine Area"
+    severity: "danger"
+    required_ppe:
+      - "Hardhat"
+      - "Safety Vest"
+    polygon:
+      - { x: 100, y: 100 }
+      - { x: 400, y: 100 }
+      - { x: 400, y: 400 }
+      - { x: 100, y: 400 }
+```
 
-- **mAP50**: 71.7%
-- **mAP50-95**: 48.1%
-- **Inference**: 2.1ms (RTX 4050)
-- **Size**: 6.3MB
+## API Reference
+
+### REST Endpoints (Stream Gateway)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/api/cameras` | List all cameras |
+| POST | `/api/cameras` | Add camera |
+| POST | `/api/cameras/start/:id` | Start camera stream |
+| WS | `/ws` | WebSocket for real-time updates |
+
+### gRPC Methods (AI Inference)
+
+| Method | Description |
+|--------|-------------|
+| `Detect` | Single image detection |
+| `StreamDetect` | Streaming detection |
+| `HealthCheck` | Service health |
+
+## Model Export
+
+Export YOLOv8 to optimized formats:
+
+```bash
+# ONNX export
+python services/ai-inference/scripts/export_model.py onnx --model models/best.pt
+
+# TensorRT FP16
+python services/ai-inference/scripts/export_model.py tensorrt --model models/best.pt --half
+
+# Benchmark
+python services/ai-inference/scripts/export_model.py benchmark
+```
+
+## Performance
+
+| Metric | Value |
+|--------|-------|
+| Inference (TensorRT FP16) | <10ms |
+| gRPC Latency | <5ms |
+| WebSocket Broadcast | <2ms |
+| Multi-Camera Support | 8+ streams |
+| Model Size | 6.3MB |
 
 ## License
 

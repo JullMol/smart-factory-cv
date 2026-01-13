@@ -2,29 +2,34 @@ $jobs = @()
 
 $jobs += Start-Job -ScriptBlock {
     Set-Location $using:PWD
-    Set-Location "ai-engine/src"
-    python server.py
+    Set-Location "services/ai-inference/src"
+    python main.py
+}
+Start-Sleep -Seconds 3
+
+$jobs += Start-Job -ScriptBlock {
+    Set-Location $using:PWD
+    Set-Location "services/stream-gateway"
+    go run cmd/server/main.go
 }
 Start-Sleep -Seconds 2
 
 $jobs += Start-Job -ScriptBlock {
     Set-Location $using:PWD
-    Set-Location "backend-streamer"
-    go run cmd/main.go
-}
-Start-Sleep -Seconds 2
-
-$jobs += Start-Job -ScriptBlock {
-    Set-Location $using:PWD
-    Set-Location "frontend-dashboard"
+    Set-Location "services/dashboard"
     npm run dev
 }
 
-Write-Host "Services started:"
-Write-Host "AI Engine:  http://localhost:8000"
-Write-Host "Backend:    ws://localhost:8080"
-Write-Host "Frontend:   http://localhost:3000"
-Write-Host "`nPress Ctrl+C to stop"
+Write-Host ""
+Write-Host "=== Smart Factory CV - Services Started ===" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  AI Inference:    http://localhost:8000 (REST), :50051 (gRPC)" -ForegroundColor Green
+Write-Host "  Stream Gateway:  http://localhost:8080 (HTTP/WS)" -ForegroundColor Green
+Write-Host "  Dashboard:       http://localhost:3000" -ForegroundColor Green
+Write-Host "  Metrics:         http://localhost:9090 (AI), :9091 (Gateway)" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Press Ctrl+C to stop all services" -ForegroundColor DarkGray
+Write-Host ""
 
 try {
     while ($true) {

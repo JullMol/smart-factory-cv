@@ -1,0 +1,39 @@
+zones:
+  - id: "zone-1"
+    name: "Machine Area"
+    severity: "danger"
+    enabled: true
+    required_ppe:
+      - "Hardhat"
+      - "Safety Vest"
+    polygon:
+      - { x: 100, y: 100 }
+      - { x: 400, y: 100 }
+      - { x: 400, y: 400 }
+      - { x: 100, y: 400 }
+
+  - id: "zone-2"
+    name: "Loading Dock"
+    severity: "warning"
+    enabled: true
+    required_ppe:
+      - "Safety Vest"
+    polygon:
+      - { x: 450, y: 100 }
+      - { x: 600, y: 100 }
+      - { x: 600, y: 300 }
+      - { x: 450, y: 300 }
+
+  - id: "zone-3"
+    name: "Assembly Line"
+    severity: "critical"
+    enabled: true
+    required_ppe:
+      - "Hardhat"
+      - "Safety Vest"
+      - "Mask"
+    polygon:
+      - { x: 50, y: 450 }
+      - { x: 300, y: 450 }
+      - { x: 300, y: 600 }
+      - { x: 50, y: 600 }
