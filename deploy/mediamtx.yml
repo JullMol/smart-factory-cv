@@ -1,6 +1,21 @@
 logLevel: info
 logDestinations: [stdout]
 
+# RTSP Server
+rtspAddress: :8554
+
+# HLS Server (for browser playback)
+hlsAddress: :8888
+hlsAllowOrigin: '*'
+hlsAlwaysRemux: yes
+hlsSegmentCount: 7
+hlsSegmentDuration: 2s
+hlsPartDuration: 500ms
+hlsVariant: lowLatency
+
+# WebRTC (optional, for low latency)
+webrtcAddress: :8889
+
 paths:
   live/cam1:
     source: publisher
