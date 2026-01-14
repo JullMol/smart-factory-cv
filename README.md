@@ -1,190 +1,256 @@
-# Smart Factory CV
+# 🏭 Smart Factory CV
 
-**Industry-Grade AI-Powered PPE Detection System for Industrial Safety Monitoring**
+### ⚡ AI-Powered Industrial Safety Monitoring System ⚡
 
-Real-time computer vision system that monitors factory floors for PPE compliance, detects safety violations, and provides intelligent alerting through virtual fencing zones.
+A real-time computer vision system that monitors factory environments for **PPE compliance** and safety violations using YOLOv8 and modern web technologies.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go)
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)
-![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)
+[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Architecture](#️-architecture) • [Tech Stack](#-tech-stack) • [Contributing](#-contributing)
 
-## Features
+---
 
-- **Real-time Detection**: ONNX/TensorRT optimized YOLOv8 inference (<10ms latency)
-- **Multi-Camera Support**: Manage 8+ RTSP/webcam streams concurrently
-- **Virtual Fencing**: Define polygon danger zones with custom PPE requirements
-- **Object Tracking**: Person re-identification across frames with ByteTrack
-- **gRPC Communication**: High-performance binary protocol between services
-- **Industrial Dashboard**: Dark theme UI with live camera grid and alert panel
-- **Observability**: Prometheus metrics + Grafana dashboards
-- **One-Command Deploy**: Docker Compose with GPU support
+## 🎯 Overview
 
-## Architecture
+Smart Factory CV is an **industrial-grade safety monitoring solution** that uses computer vision to detect Personal Protective Equipment (PPE) violations in real-time. The system monitors camera feeds, runs AI inference, and provides instant visual feedback through a modern dashboard.
+
+Built with a **futuristic industrial aesthetic** featuring glassmorphism UI, real-time video processing, and intelligent alerting.
+
+---
+
+## ✨ Features
+
+### 📹 Multi-Camera Monitoring
+- Real-time video feed processing
+- Support for multiple camera sources
+- Live detection overlay with bounding boxes
+- Per-camera compliance metrics
+
+### 🤖 AI-Powered Detection
+- YOLOv8 ONNX inference engine
+- PPE detection (Hardhat, Safety Vest, Mask)
+- Violation detection (NO-Hardhat, NO-Safety Vest, NO-Mask)
+- Configurable confidence threshold
+
+### 📊 Real-time Dashboard
+- Modern dark theme industrial UI
+- Live camera grid with detection overlays
+- System metrics (latency, people count, compliance rate)
+- Safety alerts with violation history
+
+### ⚡ High Performance
+- Optimized ONNX Runtime inference
+- FastAPI backend with async processing
+- React frontend with smooth animations
+- Low-latency video processing
+
+---
+
+## 🏗️ Architecture
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   RTSP/Webcam   │────▶│  Stream Gateway  │────▶│    Dashboard    │
-│    Cameras      │     │      (Go)        │     │    (React)      │
-└─────────────────┘     └────────┬─────────┘     └─────────────────┘
-                                 │ gRPC
-                        ┌────────▼─────────┐
-                        │   AI Inference   │
-                        │ (Python + ONNX)  │
-                        └──────────────────┘
-                                 │
-        ┌────────────────────────┼────────────────────────┐
-        ▼                        ▼                        ▼
-┌───────────────┐    ┌───────────────────┐    ┌────────────────┐
-│   Detector    │    │     Tracker       │    │  Zone Checker  │
-│ YOLOv8 ONNX   │    │  Object Re-ID     │    │Virtual Fencing │
-└───────────────┘    └───────────────────┘    └────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        🖥️ Dashboard (React)                     │
+│                    Modern Industrial UI + Charts                │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │ HTTP/REST
+                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     🧠 AI Inference (Python)                     │
+│                   FastAPI + YOLOv8 + ONNX Runtime               │
+└─────────────────────────────────────────────────────────────────┘
+                                  │
+            ┌─────────────────────┼─────────────────────┐
+            ▼                     ▼                     ▼
+    ┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+    │   Detector    │    │  Safety Check │    │    Alerts     │
+    │  YOLOv8 ONNX  │    │ PPE Compliance│    │  Violations   │
+    └───────────────┘    └───────────────┘    └───────────────┘
 ```
 
-## Quick Start
+---
+
+## 🔧 Installation
 
 ### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- Git
 
-- Docker & Docker Compose
-- NVIDIA GPU + CUDA (optional, for TensorRT)
-- Node.js 18+ (for local development)
-- Go 1.21+ (for local development)
-- Python 3.10+ (for local development)
-
-### One-Command Deployment
+### Quick Setup
 
 ```bash
-docker-compose -f deploy/docker-compose.yml up -d
+# Clone the repository
+git clone https://github.com/JullMol/smart-factory-cv.git
+cd smart-factory-cv
+
+# Setup AI Inference
+cd services/ai-inference
+pip install -r requirements.txt
+
+# Setup Dashboard
+cd ../dashboard
+npm install
 ```
 
-Access:
-- **Dashboard**: http://localhost:3000
-- **API**: http://localhost:8080
-- **Grafana**: http://localhost:3001 (admin/smartfactory)
-- **Prometheus**: http://localhost:9092
+---
 
-### Local Development
+## 🚀 Usage
+
+### 1️⃣ Start AI Inference Server
 
 ```bash
-# Install dependencies
-make dev
+cd services/ai-inference
+python src/main.py
 ```
 
-## Project Structure
+Server runs at `http://localhost:8000`
+
+### 2️⃣ Start Dashboard
+
+```bash
+cd services/dashboard
+npm run dev
+```
+
+Dashboard runs at `http://localhost:3000`
+
+### 3️⃣ Access Dashboard
+
+Open your browser and navigate to `http://localhost:3000` to view the monitoring dashboard.
+
+---
+
+## 🔌 API Reference
+
+### Health Check
+```http
+GET /health
+```
+Returns server status and model information.
+
+### Detection Endpoint
+```http
+POST /detect
+Content-Type: multipart/form-data
+
+file: image/jpeg
+confidence: 0.5 (optional)
+```
+
+Returns:
+```json
+{
+  "detections": [
+    {
+      "class_name": "Hardhat",
+      "confidence": 0.95,
+      "bbox": [x1, y1, x2, y2]
+    }
+  ],
+  "safety_check": {
+    "people_count": 2,
+    "violation_count": 1,
+    "compliance_rate": 50,
+    "has_violations": true,
+    "violations": ["NO-Mask"]
+  },
+  "processing_time_ms": 32.5
+}
+```
+
+---
+
+## 📁 Project Structure
 
 ```
 smart-factory-cv/
-├── services/
-│   ├── ai-inference/         # Python - ONNX/TensorRT detector
-│   │   ├── src/              # Main server, detector, tracker, zones
-│   │   ├── scripts/          # Model export, training
-│   │   └── Dockerfile
-│   ├── stream-gateway/       # Go - RTSP capture, WebSocket hub
-│   │   ├── cmd/server/       # Entry point
-│   │   ├── internal/         # Core packages
-│   │   └── Dockerfile
-│   └── dashboard/            # React - Industrial UI
-│       ├── src/              # Components, hooks, store
-│       └── Dockerfile
-├── proto/                    # gRPC definitions
-├── deploy/                   # Docker Compose
-├── monitoring/               # Prometheus + Grafana
-└── docs/                     # Documentation
+├── 📂 services/
+│   ├── 📂 ai-inference/          # Python AI Backend
+│   │   ├── src/
+│   │   │   ├── main.py           # FastAPI server entry
+│   │   │   ├── detector.py       # ONNX detector
+│   │   │   └── config.py         # Configuration
+│   │   ├── models/               # ONNX model files
+│   │   └── requirements.txt
+│   │
+│   └── 📂 dashboard/             # React Frontend
+│       ├── src/
+│       │   ├── App.jsx           # Main component
+│       │   ├── components/       # UI components
+│       │   └── styles/           # CSS styles
+│       └── package.json
+│
+├── 📂 deploy/                    # Deployment configs
+│   └── mediamtx.yml              # MediaMTX streaming config
+│
+├── 📂 data/                      # Training datasets
+│
+├── Makefile                      # Build commands
+└── README.md                     # This file
 ```
 
-## Tech Stack
+---
+
+## 🛠️ Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| AI Engine | Python, ONNX Runtime, TensorRT, Norfair, Shapely |
-| Backend | Go, gRPC, WebSocket, Prometheus |
-| Frontend | React 18, Recharts, Framer Motion, Zustand |
-| Infrastructure | Docker, Redis, Prometheus, Grafana |
-| Model | YOLOv8n (71.7% mAP50, 6.3MB) |
+| **AI Engine** | Python, YOLOv8, ONNX Runtime, FastAPI |
+| **Frontend** | React 18, Vite, Zustand, Recharts |
+| **Model** | YOLOv8n Custom (71.7% mAP50) |
+| **Styling** | CSS3 with Glassmorphism |
 
-## Configuration
+---
 
-### Environment Variables
-
-**AI Inference:**
-```env
-MODEL_PATH=/app/models/best.onnx
-CONFIDENCE_THRESHOLD=0.5
-GRPC_PORT=50051
-DEVICE=cuda
-```
-
-**Stream Gateway:**
-```env
-AI_ENGINE_URL=ai-inference:50051
-HTTP_ADDR=:8080
-TARGET_FPS=15
-```
-
-### Zone Configuration
-
-Define danger zones in `services/ai-inference/config/zones.yaml`:
-
-```yaml
-zones:
-  - id: "zone-1"
-    name: "Machine Area"
-    severity: "danger"
-    required_ppe:
-      - "Hardhat"
-      - "Safety Vest"
-    polygon:
-      - { x: 100, y: 100 }
-      - { x: 400, y: 100 }
-      - { x: 400, y: 400 }
-      - { x: 100, y: 400 }
-```
-
-## API Reference
-
-### REST Endpoints (Stream Gateway)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/api/cameras` | List all cameras |
-| POST | `/api/cameras` | Add camera |
-| POST | `/api/cameras/start/:id` | Start camera stream |
-| WS | `/ws` | WebSocket for real-time updates |
-
-### gRPC Methods (AI Inference)
-
-| Method | Description |
-|--------|-------------|
-| `Detect` | Single image detection |
-| `StreamDetect` | Streaming detection |
-| `HealthCheck` | Service health |
-
-## Model Export
-
-Export YOLOv8 to optimized formats:
-
-```bash
-# ONNX export
-python services/ai-inference/scripts/export_model.py onnx --model models/best.pt
-
-# TensorRT FP16
-python services/ai-inference/scripts/export_model.py tensorrt --model models/best.pt --half
-
-# Benchmark
-python services/ai-inference/scripts/export_model.py benchmark
-```
-
-## Performance
+## 📊 Model Performance
 
 | Metric | Value |
 |--------|-------|
-| Inference (TensorRT FP16) | <10ms |
-| gRPC Latency | <5ms |
-| WebSocket Broadcast | <2ms |
-| Multi-Camera Support | 8+ streams |
-| Model Size | 6.3MB |
+| **Model** | YOLOv8n Custom |
+| **mAP50** | 71.7% |
+| **Inference** | ~30ms (CPU) |
+| **Model Size** | 6.3MB |
+| **Classes** | 6 (Hardhat, Safety Vest, Mask + NO variants) |
 
-## License
+---
 
-MIT
+## 🤝 Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. **Fork** the repository
+2. **Create** a feature branch
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. **Commit** your changes
+   ```bash
+   git commit -m 'Add amazing feature'
+   ```
+4. **Push** to the branch
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+5. **Open** a Pull Request
+
+### Ideas for Contributions
+- 🎨 UI/UX improvements
+- 🧠 Model optimization
+- 📊 Additional metrics and charts
+- 🔧 Performance optimizations
+- 📝 Documentation improvements
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+### 🌟 Star this repo if you find it useful!
+
+**Made with ❤️ for industrial safety**
+
+</div>

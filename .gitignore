@@ -31,7 +31,7 @@ runs/
 **/runs/
 *.pt
 !best.pt
-!ai-engine/models/best.pt
+!models/best.pt
 
 # IDE
 .vscode/
@@ -49,7 +49,6 @@ desktop.ini
 *.exe
 *.exe~
 *.dll
-*.so
 *.dylib
 *.test
 *.out
@@ -66,13 +65,15 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
-dist/
-build/
 
-# Data (large files - exclude all)
+# Data (large files)
 data/
 validation_visual/
 *.mp4
+
+# Deploy
+deploy/*.exe
+deploy/*.zip
 
 # Misc
 *.bak
@@ -81,4 +82,3 @@ validation_visual/
 .pytest_cache/
 .coverage
 htmlcov/
-.gitignore
