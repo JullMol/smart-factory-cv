@@ -17,7 +17,7 @@ Start-Sleep -Seconds 2
 $jobs += Start-Job -ScriptBlock {
     Set-Location $using:PWD
     Set-Location "services/dashboard"
-    npm run dev
+    npx vite --host
 }
 
 Write-Host ""

@@ -47,6 +47,24 @@ func main() {
 
 	cameraManager := capture.NewManager(log)
 
+	rtspBase := "rtsp://localhost:8554/live/"
+	cameras := []capture.CameraConfig{
+		{ID: "cam-1", Name: "Main Entrance", URL: rtspBase + "cam1", Type: "rtsp"},
+		{ID: "cam-2", Name: "Assembly Line A", URL: rtspBase + "cam2", Type: "rtsp"},
+		{ID: "cam-3", Name: "Loading Dock", URL: rtspBase + "cam3", Type: "rtsp"},
+		{ID: "cam-4", Name: "Machine Shop", URL: rtspBase + "cam4", Type: "rtsp"},
+	}
+
+	for _, cfg := range cameras {
+		if err := cameraManager.AddCamera(cfg); err != nil {
+			log.Error("failed to add camera", zap.Error(err))
+		} else {
+			if err := cameraManager.StartCamera(cfg.ID); err != nil {
+				log.Error("failed to start camera", zap.Error(err))
+			}
+		}
+	}
+
 	processor := NewProcessor(cfg, log, hub, grpcClient, cameraManager)
 
 	router := api.NewRouter(log, hub, cameraManager, processor)

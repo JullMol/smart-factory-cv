@@ -30,24 +30,26 @@ if not exist "%VIDEO_DIR%" (
 echo Starting video streams...
 echo.
 
+set FFMPEG_OPTS=-c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.1 -bf 0 -g 30 -b:v 2M -maxrate 2M -bufsize 4M -c:a aac -b:a 128k -f rtsp
+
 if exist "%VIDEO_DIR%\cam1.mp4" (
     echo [CAM-1] Starting Main Entrance stream...
-    start /min cmd /c "ffmpeg -re -stream_loop -1 -i "%VIDEO_DIR%\cam1.mp4" -c copy -f rtsp %RTSP_SERVER%/live/cam1"
+    start /min cmd /c "ffmpeg -re -stream_loop -1 -i "%VIDEO_DIR%\cam1.mp4" %FFMPEG_OPTS% %RTSP_SERVER%/live/cam1"
 )
 
 if exist "%VIDEO_DIR%\cam2.mp4" (
     echo [CAM-2] Starting Assembly Line stream...
-    start /min cmd /c "ffmpeg -re -stream_loop -1 -i "%VIDEO_DIR%\cam2.mp4" -c copy -f rtsp %RTSP_SERVER%/live/cam2"
+    start /min cmd /c "ffmpeg -re -stream_loop -1 -i "%VIDEO_DIR%\cam2.mp4" %FFMPEG_OPTS% %RTSP_SERVER%/live/cam2"
 )
 
 if exist "%VIDEO_DIR%\cam3.mp4" (
     echo [CAM-3] Starting Loading Dock stream...
-    start /min cmd /c "ffmpeg -re -stream_loop -1 -i "%VIDEO_DIR%\cam3.mp4" -c copy -f rtsp %RTSP_SERVER%/live/cam3"
+    start /min cmd /c "ffmpeg -re -stream_loop -1 -i "%VIDEO_DIR%\cam3.mp4" %FFMPEG_OPTS% %RTSP_SERVER%/live/cam3"
 )
 
 if exist "%VIDEO_DIR%\cam4.mp4" (
     echo [CAM-4] Starting Machine Shop stream...
-    start /min cmd /c "ffmpeg -re -stream_loop -1 -i "%VIDEO_DIR%\cam4.mp4" -c copy -f rtsp %RTSP_SERVER%/live/cam4"
+    start /min cmd /c "ffmpeg -re -stream_loop -1 -i "%VIDEO_DIR%\cam4.mp4" %FFMPEG_OPTS% %RTSP_SERVER%/live/cam4"
 )
 
 echo.

@@ -8,10 +8,11 @@ rtspAddress: :8554
 hlsAddress: :8888
 hlsAllowOrigin: '*'
 hlsAlwaysRemux: yes
-hlsSegmentCount: 7
-hlsSegmentDuration: 2s
-hlsPartDuration: 500ms
-hlsVariant: lowLatency
+hlsSegmentCount: 10
+hlsSegmentDuration: 4s
+hlsPartDuration: 1s
+hlsSegmentMaxSize: 50M
+hlsVariant: fmp4
 
 # WebRTC (optional, for low latency)
 webrtcAddress: :8889

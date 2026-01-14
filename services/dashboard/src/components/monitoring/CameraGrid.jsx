@@ -2,70 +2,44 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import useStore from '../../store/store';
 
 const AI_API_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
-const RTSP_SERVER = import.meta.env.VITE_RTSP_SERVER || 'localhost:8554';
-const USE_RTSP = import.meta.env.VITE_USE_RTSP === 'true';
 
-const RTSP_CAMERAS = [
-  { id: 'cam-1', name: 'Main Entrance', rtspPath: 'live/cam1' },
-  { id: 'cam-2', name: 'Assembly Line A', rtspPath: 'live/cam2' },
-  { id: 'cam-3', name: 'Loading Dock', rtspPath: 'live/cam3' },
-  { id: 'cam-4', name: 'Machine Shop', rtspPath: 'live/cam4' }
-];
-
-const FALLBACK_VIDEOS = [
-  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4'
+const ALL_CAMERAS = [
+  { id: 'cam-1', name: 'Main Entrance', type: 'video', videoUrl: '/videos/cam1.mp4' },
+  { id: 'cam-2', name: 'Assembly Line', type: 'video', videoUrl: '/videos/cam2.mp4' },
+  { id: 'cam-3', name: 'Loading Dock', type: 'video', videoUrl: '/videos/cam3.mp4' },
+  { id: 'cam-4', name: 'Machine Shop', type: 'video', videoUrl: '/videos/cam4.mp4' }
 ];
 
 export default function CameraGrid() {
   const { cameras, detections } = useStore();
   
-  const displayCameras = cameras.length > 0 ? cameras : RTSP_CAMERAS.map((cam, i) => ({
-    ...cam,
-    url: USE_RTSP 
-      ? `http://${RTSP_SERVER}/${cam.rtspPath}` 
-      : FALLBACK_VIDEOS[i]
-  }));
+  const displayCameras = cameras.length > 0 ? cameras : ALL_CAMERAS;
   
   return (
     <div className="card" style={{ flex: 1 }}>
       <div className="card-header">
         <span className="card-title">Live Camera Feeds</span>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {USE_RTSP && (
-            <span style={{ 
-              fontSize: '0.65rem', 
-              color: '#3fb950',
-              padding: '0.2rem 0.4rem',
-              background: 'rgba(63, 185, 80, 0.15)',
-              borderRadius: '4px',
-              border: '1px solid rgba(63, 185, 80, 0.3)'
-            }}>
-              RTSP Mode
-            </span>
-          )}
-          <span style={{ 
-            fontSize: '0.75rem', 
-            color: 'var(--text-secondary)',
-            padding: '0.25rem 0.5rem',
-            background: 'var(--bg-tertiary)',
-            borderRadius: '4px'
-          }}>
-            {displayCameras.length} cameras
-          </span>
-        </div>
+        <span style={{ 
+          fontSize: '0.7rem', 
+          color: '#3fb950',
+          padding: '0.2rem 0.5rem',
+          background: 'rgba(63, 185, 80, 0.15)',
+          borderRadius: '4px'
+        }}>
+          {displayCameras.length} Cameras
+        </span>
       </div>
       <div className="card-body">
-        <div className="camera-grid">
-          {displayCameras.map((camera, index) => (
+        <div className="camera-grid" style={{
+          gridTemplateColumns: displayCameras.length <= 4 
+            ? 'repeat(2, 1fr)' 
+            : 'repeat(4, 1fr)'
+        }}>
+          {displayCameras.map((camera) => (
             <CameraFeed 
               key={camera.id} 
               camera={camera} 
               detectionData={detections[camera.id]}
-              videoUrl={camera.url || FALLBACK_VIDEOS[index]}
-              rtspPath={camera.rtspPath}
             />
           ))}
         </div>
@@ -74,7 +48,7 @@ export default function CameraGrid() {
   );
 }
 
-function CameraFeed({ camera, videoUrl, rtspPath }) {
+function CameraFeed({ camera }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -146,8 +120,9 @@ function CameraFeed({ camera, videoUrl, rtspPath }) {
     if (!video) return;
     
     video.muted = true;
-    video.loop = true;
     video.playsInline = true;
+    video.src = camera.videoUrl;
+    video.loop = true;
     
     const playVideo = async () => {
       try {
@@ -155,7 +130,6 @@ function CameraFeed({ camera, videoUrl, rtspPath }) {
         setIsPlaying(true);
         setConnectionStatus('connected');
       } catch (e) {
-        console.log('Video autoplay blocked:', e);
         setConnectionStatus('error');
       }
     };
@@ -165,14 +139,13 @@ function CameraFeed({ camera, videoUrl, rtspPath }) {
     
     return () => {
       video.removeEventListener('loadeddata', playVideo);
-      video.removeEventListener('error', () => {});
     };
-  }, [videoUrl]);
+  }, [camera]);
   
   useEffect(() => {
     if (!isPlaying) return;
     
-    const interval = setInterval(detectFrame, 500);
+    const interval = setInterval(detectFrame, 1500);
     
     return () => clearInterval(interval);
   }, [isPlaying, detectFrame]);
@@ -186,47 +159,60 @@ function CameraFeed({ camera, videoUrl, rtspPath }) {
     let animationId;
     
     const drawFrame = () => {
-      if (video.paused || video.ended) {
+      // Safety check: ensure video is ready and has dimensions
+      if (!video || 
+          video.paused || 
+          video.ended || 
+          video.readyState < 2 || // HAVE_CURRENT_DATA
+          !video.videoWidth || 
+          !video.videoHeight) {
         animationId = requestAnimationFrame(drawFrame);
         return;
       }
       
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 360;
-      
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      const scaleX = canvas.width / 640;
-      const scaleY = canvas.height / 360;
-      
-      detections.forEach(det => {
-        const [x1, y1, x2, y2] = det.bbox;
-        const sx1 = x1 * scaleX;
-        const sy1 = y1 * scaleY;
-        const sx2 = x2 * scaleX;
-        const sy2 = y2 * scaleY;
+      try {
+        // Set dimensions only if they are valid
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 360;
         
-        const isViolation = det.class_name.startsWith('NO-');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        ctx.strokeStyle = isViolation ? '#f85149' : '#3fb950';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx1, sy1, sx2 - sx1, sy2 - sy1);
+        const scaleX = canvas.width / 640;
+        const scaleY = canvas.height / 360;
         
-        ctx.fillStyle = isViolation ? '#f85149' : '#3fb950';
-        const label = `${det.class_name} ${(det.confidence * 100).toFixed(0)}%`;
-        ctx.font = '12px Inter, sans-serif';
-        const textWidth = ctx.measureText(label).width + 10;
-        ctx.fillRect(sx1, sy1 - 20, textWidth, 20);
+        detections.forEach(det => {
+          if (!det.bbox) return; // Safety check for missing bbox
+          
+          const [x1, y1, x2, y2] = det.bbox;
+          const sx1 = x1 * scaleX;
+          const sy1 = y1 * scaleY;
+          const sx2 = x2 * scaleX;
+          const sy2 = y2 * scaleY;
+          
+          const isViolation = det.class_name && det.class_name.startsWith('NO-');
+          
+          ctx.strokeStyle = isViolation ? '#f85149' : '#3fb950';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(sx1, sy1, sx2 - sx1, sy2 - sy1);
+          
+          ctx.fillStyle = isViolation ? '#f85149' : '#3fb950';
+          const label = `${det.class_name || 'Unknown'} ${(det.confidence * 100).toFixed(0)}%`;
+          ctx.font = '12px Inter, sans-serif';
+          const textWidth = ctx.measureText(label).width + 10;
+          ctx.fillRect(sx1, sy1 - 20, textWidth, 20);
+          
+          ctx.fillStyle = '#fff';
+          ctx.fillText(label, sx1 + 5, sy1 - 6);
+        });
         
-        ctx.fillStyle = '#fff';
-        ctx.fillText(label, sx1 + 5, sy1 - 6);
-      });
-      
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(canvas.width - 70, 8, 62, 22);
-      ctx.fillStyle = '#3fb950';
-      ctx.font = '11px JetBrains Mono, monospace';
-      ctx.fillText(`${processingTime.toFixed(0)}ms`, canvas.width - 65, 23);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(canvas.width - 70, 8, 62, 22);
+        ctx.fillStyle = '#3fb950';
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.fillText(`${processingTime.toFixed(0)}ms`, canvas.width - 65, 23);
+      } catch (err) {
+        console.warn("Error drawing frame:", err);
+      }
       
       animationId = requestAnimationFrame(drawFrame);
     };
@@ -238,11 +224,21 @@ function CameraFeed({ camera, videoUrl, rtspPath }) {
     };
   }, [detections, processingTime]);
   
+  const getStatusBadge = () => {
+    if (connectionStatus === 'connected') {
+      return { text: 'LIVE', className: '' };
+    } else if (connectionStatus === 'error') {
+      return { text: 'OFFLINE', className: 'error' };
+    }
+    return { text: 'CONNECTING', className: 'connecting' };
+  };
+  
+  const status = getStatusBadge();
+  
   return (
     <div className="camera-feed" onClick={() => videoRef.current?.play()}>
       <video 
         ref={videoRef}
-        src={videoUrl}
         style={{ display: 'none' }}
         crossOrigin="anonymous"
       />
@@ -259,21 +255,9 @@ function CameraFeed({ camera, videoUrl, rtspPath }) {
       <div className="camera-overlay">
         <div className="camera-header">
           <span className="camera-name">{camera.name}</span>
-          <div className="camera-status">
-            {USE_RTSP && rtspPath && (
-              <span style={{ 
-                fontSize: '0.6rem', 
-                color: '#8b949e',
-                marginRight: '0.5rem' 
-              }}>
-                {rtspPath}
-              </span>
-            )}
-            <span className={`live-badge ${connectionStatus === 'error' ? 'error' : ''}`}>
-              {connectionStatus === 'connected' ? 'LIVE' : 
-               connectionStatus === 'error' ? 'OFFLINE' : 'CONNECTING'}
-            </span>
-          </div>
+          <span className={`live-badge ${status.className}`}>
+            {status.text}
+          </span>
         </div>
         
         <div className="camera-stats">

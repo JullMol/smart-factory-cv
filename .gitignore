@@ -72,6 +72,7 @@ build/
 # Data (large files - exclude all)
 data/
 validation_visual/
+*.mp4
 
 # Misc
 *.bak

@@ -3,7 +3,7 @@ import useStore from '../../store/store';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
 export default function Sidebar() {
-  const { metrics, confidenceThreshold, setConfidenceThreshold, zones } = useStore();
+  const { metrics, confidenceThreshold, setConfidenceThreshold, zones = [] } = useStore();
   
   const mockHistory = Array.from({ length: 20 }, (_, i) => ({
     time: i,
